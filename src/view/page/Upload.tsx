@@ -61,7 +61,7 @@ export default function Upload() {
     setIsLoading(true);
 
     // TODO: このあたり BiraService としてまとめる
-    const filename = uuidv4() + extractFileExtension(file.name, ".jpg");
+    const filename = uuidv4() + extractFileExtension(file.name, ".pdf");
 
     try {
       await storage.upload(file, filename);
