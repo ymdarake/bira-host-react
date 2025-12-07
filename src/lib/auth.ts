@@ -33,6 +33,5 @@ export async function logout(): Promise<null> {
 
 export async function isAdmin(userUid: string): Promise<boolean> {
   const api = NewAdminRepository();
-  const adminList = await api.list();
-  return adminList.findIndex((admin) => admin.userUid === userUid) !== -1;
+  return await api.exists(userUid);
 }
