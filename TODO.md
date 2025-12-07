@@ -29,12 +29,21 @@ FirebaseのAPIキーやプロジェクトIDなどの設定情報が `src/lib/fir
 *   `src/lib/firebase.ts` では、`import.meta.env` を通じてこれらの環境変数を読み込むように変更します。
 *   `.gitignore` に `.env` を追加し、環境設定が誤ってリポジトリにコミットされないようにします。
 
-## 4. Firebaseセキュリティルールにおける管理者UIDの動的化
+## 4. Firebaseセキュリティルールにおける管理者UIDの動的化とデータ構造の最適化
 ### 現状と問題点
-`firestore.rules` および `storage.rules` において、管理者として許可するユーザーのUIDがルールファイル内に直接ハードコードされています。管理者の追加や削除のたびにルールファイルを変更し、デプロイし直す必要があり、運用負荷が高いです。
+現在、`firestore.rules` と `storage.rules` で管理者UIDのチェックを動的化（ハードコード排除）しようとしていますが、以下の課題があります。
+1.  **Storage Rulesの制約**: `storage.rules` からはFirestoreへのアクセス（`exists` や `get`）ができないため、Firestore上の `admin` コレクションを参照して権限を判定することができません。
+2.  **Firestoreデータ構造**: `firestore.rules` で `exists()` を使って効率的に管理者チェックを行うには、`admin` コレクションの「ドキュメントID」自体がユーザーのUIDと一致している必要があります（現在は自動生成ID）。
 
 ### 改善提案
-管理者の管理をより柔軟かつセキュアにするため、セキュリティルールをFirestoreのデータと連携させるべきです。
-*   `admin` コレクションに管理者UIDが登録されているかどうかで、書き込み権限を判断するようにルールを変更します。
-*   これにより、`admin` コレクションを更新するだけで管理者の追加・削除が可能になり、ルールの再デプロイが不要になります。
-*   `admin` コレクションのドキュメントIDをユーザーのUIDにすることで、ルール内での `exists()` チェックが最も効率的になります。
+セキュリティと運用性を向上させるため、以下の段階的な対応を検討します。
+
+#### フェーズ1: Firestoreデータ構造の修正とFirestoreルールの最適化
+*   Firestore上の `admin` コレクションのデータを移行し、各ドキュメントのIDを対応する管理者のUser UIDに変更します。
+*   `firestore.rules` では `exists(/databases/$(database)/documents/admin/$(request.auth.uid))` を使用して、自身の管理者権限を効率的にチェックするようにします。
+*   フロントエンドの `isAdmin` 実装も、`query` ではなく `getDoc` を使用して直接ID指定で取得するように変更し、パフォーマンスを向上させます。
+
+#### フェーズ2: Storage Rulesの動的化 (Custom Claimsの導入)
+*   Storage RulesではFirestoreを参照できないため、Firebase Authenticationの **Custom Claims** を利用します。
+*   Cloud Functions等を導入し、`admin` コレクションへの追加・削除をトリガーにして、対象ユーザーのAuthトークンに `admin: true` などのカスタムクレームを付与・削除する仕組みを構築します。
+*   `storage.rules` (および `firestore.rules`) では `request.auth.token.admin == true` をチェックするだけで済むようになり、最も高速かつセキュアな判定が可能になります。
