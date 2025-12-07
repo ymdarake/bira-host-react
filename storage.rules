@@ -9,7 +9,9 @@ service firebase.storage {
 				(request.auth.uid == 'mmVmpiRut4VVWmGs871naSflbUp2'
          || request.auth.uid == '9c3GEV7pXydKDwJMM0HBcPWHo8f2'
          || request.auth.uid == 'en18iQfAnQXdQfeP0Be89VtfFWO2'
-         || request.auth.uid == 'POI0OwLFpyXmAlNLXkdNGGLFog13');
+         || request.auth.uid == 'POI0OwLFpyXmAlNLXkdNGGLFog13'
+         || request.auth.uid == 'BMdRsJzMfvSp5EHBv6wI9rYwYxy1'
+         || request.auth.uid == '9DylOzLRA0UTIfR1hLBWQIXdGbQ2');
     }
   }
 }
